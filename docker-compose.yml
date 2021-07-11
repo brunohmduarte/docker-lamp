@@ -27,5 +27,20 @@ services:
         depends_on:
             - mysql
 
+    php74-apache:
+        image: "php:7.4-apache"
+        container_name: php74-apache
+        restart: always
+        networks:
+            - lamp
+        ports:
+            - "8000:80"
+        volumes:
+            - ./php74-apache/html:/var/www/html
+        depends_on:
+            - mysql
+        links:
+            - mysql
+
 networks:
     lamp:
