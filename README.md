@@ -1,1 +1,0 @@
-É obrigatório criar a pasta /mysql/data na raiz desse projeto.

@@ -1,23 +1,59 @@
 version: "3.7"
-
 services:
-    mysql: 
-        image: mysql:8.0.25
-        container_name: mysql
-        networks: 
-            - lamp
+    webserver:
+        image: nginx:alpine
+        container_name: lemp-webserver
+        working_dir: /var/www
+        volumes:
+            - ./var/www:/var/www
+            - ./nginx/conf.d:/etc/nginx/conf.d
+        #   - ./nginx/certificates:/etc/nginx/certificates
+        links:
+            - mysql
+            - php74-fpm
+        ports:
+            - "80:80"
+            - "443:443"
+
+    mysql:
+        image: mysql:5.6.51
+        container_name: lemp-mysql
         ports:
             - "3306:3306"
         volumes:
-            - ./mysql/data:/var/lib/mysql
+            - ./var/lib/mysql:/var/lib/mysql
+            - ./mysql/conf.d:/etc/mysql/conf.d
         environment:
-            MYSQL_ROOT_PASSWORD: localhost
+            - MYSQL_USERNAME=root
+            - MYSQL_ROOT_PASSWORD=root
+
+    php74-fpm:
+        build:
+            context: ./php74
+            args:
+            - USERGID=${USERGID}
+            - USERUID=${USERUID}
+            - USERNAME=${USERNAME}
+        container_name: lemp-php74
+        working_dir: /var/www
+        volumes:
+            - ./var/www:/var/www
+            - ./php74/config/php.ini:/usr/local/etc/php/php.ini
+            - ./ssh-keys:/var/www/.ssh/
+        links:
+            - mysql
+        depends_on:
+            - mysql
+        env_file:
+            - .env
+        environment:
+            - TERM=xterm
+            - PHP_IDE_CONFIG=serverName=PHP
+            - COMPOSER_MEMORY_LIMIT=-1
 
     phpmyadmin:
         image: phpmyadmin/phpmyadmin:5.1.1
-        container_name: phpmyadmin
-        networks:
-            - lamp
+        container_name: lemp-phpmyadmin
         ports:
             - "8080:80"
         environment:
@@ -26,21 +62,3 @@ services:
             - mysql
         depends_on:
             - mysql
-
-    php74-apache:
-        image: "php:7.4-apache"
-        container_name: php74-apache
-        restart: always
-        networks:
-            - lamp
-        ports:
-            - "8000:80"
-        volumes:
-            - ./php74-apache/html:/var/www/html
-        depends_on:
-            - mysql
-        links:
-            - mysql
-
-networks:
-    lamp:
